@@ -63,7 +63,7 @@ class SecureStoreBackedAutofillStoreTest {
 
     @Mock
     private lateinit var autofillPrefsStore: AutofillPrefsStore
-    private lateinit var testee: SecureStoreBackedAutofillStore
+    private lateinit var testee: com.duckduckgo.autofill.impl.SecureStoreBackedAutofillStore
     private lateinit var secureStore: FakeSecureStore
 
     private val autofillUrlMatcher: AutofillUrlMatcher = AutofillDomainNameUrlMatcher(TestUrlUnicodeNormalizer())
@@ -473,7 +473,7 @@ class SecureStoreBackedAutofillStoreTest {
         canAccessSecureStorage: Boolean,
     ) {
         secureStore = FakeSecureStore(canAccessSecureStorage)
-        testee = SecureStoreBackedAutofillStore(
+        testee = com.duckduckgo.autofill.impl.SecureStoreBackedAutofillStore(
             secureStorage = secureStore,
             lastUpdatedTimeProvider = lastUpdatedTimeProvider,
             autofillPrefsStore = autofillPrefsStore,

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 DuckDuckGo
+ * Copyright (c) 2023 DuckDuckGo
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import com.duckduckgo.autofill.api.store.AutofillStore
 import com.duckduckgo.autofill.api.store.AutofillStore.ContainsCredentialsResult
 import com.duckduckgo.autofill.api.store.AutofillStore.ContainsCredentialsResult.NoMatch
 import com.duckduckgo.autofill.api.urlmatcher.AutofillUrlMatcher
+import com.duckduckgo.autofill.sync.SyncLoginCredentials
 import com.duckduckgo.securestorage.api.SecureStorage
 import com.duckduckgo.securestorage.api.WebsiteLoginDetails
 import com.duckduckgo.securestorage.api.WebsiteLoginDetailsWithCredentials
@@ -41,6 +42,7 @@ class SecureStoreBackedAutofillStore(
     private val autofillPrefsStore: AutofillPrefsStore,
     private val dispatcherProvider: DispatcherProvider = DefaultDispatcherProvider(),
     private val autofillUrlMatcher: AutofillUrlMatcher,
+    private val syncLoginCredentials: SyncLoginCredentials,
 ) : AutofillStore {
 
     override val autofillAvailable: Boolean
@@ -182,6 +184,7 @@ class SecureStoreBackedAutofillStore(
     override suspend fun deleteCredentials(id: Long): LoginCredentials? {
         val existingCredential = secureStorage.getWebsiteLoginDetailsWithCredentials(id)
         secureStorage.deleteWebsiteLoginDetailsWithCredentials(id)
+        syncLoginCredentials.onEntityRemoved(id)
         return existingCredential?.toLoginCredentials()
     }
 
