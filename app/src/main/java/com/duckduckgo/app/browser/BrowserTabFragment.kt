@@ -88,6 +88,8 @@ import com.duckduckgo.app.browser.BrowserTabViewModel.OmnibarViewState
 import com.duckduckgo.app.browser.BrowserTabViewModel.PrivacyShieldViewState
 import com.duckduckgo.app.browser.BrowserTabViewModel.SavedSiteChangedViewState
 import com.duckduckgo.app.browser.DownloadConfirmationFragment.DownloadConfirmationDialogListener
+import com.duckduckgo.app.browser.WebViewErrorResponse.BAD_URL
+import com.duckduckgo.app.browser.WebViewErrorResponse.CONNECTION
 import com.duckduckgo.app.browser.autocomplete.BrowserAutoCompleteSuggestionsAdapter
 import com.duckduckgo.app.browser.autofill.AutofillCredentialsSelectionResultHandler
 import com.duckduckgo.app.browser.cookies.ThirdPartyCookieManager
@@ -454,6 +456,9 @@ class BrowserTabFragment :
 
     private val newBrowserTab
         get() = binding.includeNewBrowserTab
+
+    private val errorView
+        get() = binding.includeErrorView
 
     private val daxDialogCta
         get() = binding.includeNewBrowserTab.includeDaxDialogCta
@@ -942,13 +947,29 @@ class BrowserTabFragment :
         omnibar.appBarLayout.setExpanded(true)
         webView?.onPause()
         webView?.hide()
+        errorView.errorLayout.gone()
     }
 
     private fun showBrowser() {
         newBrowserTab.newTabLayout.gone()
         binding.browserLayout.show()
+        errorView.errorLayout.gone()
         webView?.show()
         webView?.onResume()
+    }
+
+    private fun showError(errorType: WebViewErrorResponse) {
+        binding.browserLayout.gone()
+        omnibar.appBarLayout.setExpanded(true)
+        webView?.onPause()
+        webView?.hide()
+        errorView.errorMessage!!.setText(errorType.errorId)
+        if (appTheme.isLightModeEnabled()){
+            errorView.yetiIcon!!.setImageResource(com.duckduckgo.mobile.android.R.drawable.ic_yeti_light)
+        } else {
+            errorView.yetiIcon!!.setImageResource(com.duckduckgo.mobile.android.R.drawable.ic_yeti_dark)
+        }
+        errorView.errorLayout.show()
     }
 
     fun submitQuery(query: String) {
@@ -1155,6 +1176,9 @@ class BrowserTabFragment :
                 includeShortcutToViewCredential = it.includeShortcutToViewCredential,
             )
 
+            is Command.WebViewError -> {
+                showError(it.errorType)
+            }
             else -> {
                 // NO OP
             }

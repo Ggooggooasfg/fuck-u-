@@ -29,7 +29,10 @@ import android.webkit.GeolocationPermissions
 import android.webkit.PermissionRequest
 import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
+import android.webkit.WebResourceError
+import android.webkit.WebResourceRequest
 import android.webkit.WebView
+import android.webkit.WebViewClient.ERROR_HOST_LOOKUP
 import androidx.annotation.AnyThread
 import androidx.annotation.VisibleForTesting
 import androidx.core.net.toUri
@@ -466,6 +469,8 @@ class BrowserTabViewModel @Inject constructor(
 
         class AcceptGeneratedPassword(val url: String) : Command()
         class RejectGeneratedPassword(val url: String) : Command()
+
+        class WebViewError(val errorType: WebViewErrorResponse) : Command()
     }
 
     sealed class NavigationCommand : Command() {
@@ -2830,6 +2835,11 @@ class BrowserTabViewModel @Inject constructor(
 
     override fun linkOpenedInNewTab(): Boolean {
         return isLinkOpenedInNewTab
+    }
+
+    override fun onReceivedError(errorType: WebViewErrorResponse) {
+        command.postValue(WebViewError(errorType))
+
     }
 
     fun onAutofillMenuSelected() {
