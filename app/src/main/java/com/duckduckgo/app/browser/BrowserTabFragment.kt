@@ -88,8 +88,7 @@ import com.duckduckgo.app.browser.BrowserTabViewModel.OmnibarViewState
 import com.duckduckgo.app.browser.BrowserTabViewModel.PrivacyShieldViewState
 import com.duckduckgo.app.browser.BrowserTabViewModel.SavedSiteChangedViewState
 import com.duckduckgo.app.browser.DownloadConfirmationFragment.DownloadConfirmationDialogListener
-import com.duckduckgo.app.browser.WebViewErrorResponse.BAD_URL
-import com.duckduckgo.app.browser.WebViewErrorResponse.CONNECTION
+import com.duckduckgo.app.browser.WebViewErrorResponse.OMITTED
 import com.duckduckgo.app.browser.autocomplete.BrowserAutoCompleteSuggestionsAdapter
 import com.duckduckgo.app.browser.autofill.AutofillCredentialsSelectionResultHandler
 import com.duckduckgo.app.browser.cookies.ThirdPartyCookieManager
@@ -200,9 +199,6 @@ import com.duckduckgo.downloads.api.FileDownloader.PendingFileDownload
 import com.duckduckgo.mobile.android.app.tracking.ui.AppTrackerOnboardingActivityWithEmptyParamsParams
 import com.duckduckgo.mobile.android.ui.store.BrowserAppTheme
 import com.duckduckgo.mobile.android.ui.view.*
-import com.duckduckgo.mobile.android.ui.view.DaxDialog
-import com.duckduckgo.mobile.android.ui.view.DaxDialogListener
-import com.duckduckgo.mobile.android.ui.view.KeyboardAwareEditText
 import com.duckduckgo.mobile.android.ui.view.dialog.CustomAlertDialogBuilder
 import com.duckduckgo.mobile.android.ui.view.dialog.DaxAlertDialog
 import com.duckduckgo.mobile.android.ui.view.dialog.StackedAlertDialogBuilder
@@ -220,13 +216,13 @@ import com.duckduckgo.voice.api.VoiceSearchLauncher
 import com.duckduckgo.voice.api.VoiceSearchLauncher.Source.BROWSER
 import com.google.android.material.snackbar.BaseTransientBottomBar
 import com.google.android.material.snackbar.Snackbar
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.cancellable
+import timber.log.Timber
 import java.io.File
 import javax.inject.Inject
 import javax.inject.Provider
 import kotlin.coroutines.CoroutineContext
-import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.cancellable
-import timber.log.Timber
 
 @InjectWith(FragmentScope::class)
 class BrowserTabFragment :
@@ -953,9 +949,9 @@ class BrowserTabFragment :
     private fun showBrowser() {
         newBrowserTab.newTabLayout.gone()
         binding.browserLayout.show()
-        errorView.errorLayout.gone()
         webView?.show()
         webView?.onResume()
+        errorView.errorLayout.gone()
     }
 
     private fun showError(errorType: WebViewErrorResponse) {
@@ -964,7 +960,7 @@ class BrowserTabFragment :
         webView?.onPause()
         webView?.hide()
         errorView.errorMessage!!.setText(errorType.errorId)
-        if (appTheme.isLightModeEnabled()){
+        if (appTheme.isLightModeEnabled()) {
             errorView.yetiIcon!!.setImageResource(com.duckduckgo.mobile.android.R.drawable.ic_yeti_light)
         } else {
             errorView.yetiIcon!!.setImageResource(com.duckduckgo.mobile.android.R.drawable.ic_yeti_dark)
@@ -1179,6 +1175,7 @@ class BrowserTabFragment :
             is Command.WebViewError -> {
                 showError(it.errorType)
             }
+
             else -> {
                 // NO OP
             }
@@ -3106,6 +3103,12 @@ class BrowserTabFragment :
                         showBrowser()
                     } else {
                         showHome()
+                    }
+                } else {
+                    if (viewState.browserError != OMITTED) {
+                        showError(viewState.browserError)
+                    } else {
+                        showBrowser()
                     }
                 }
 
