@@ -17,6 +17,13 @@
 package com.duckduckgo.networkprotection.api
 
 interface NetworkProtectionState {
+
+    /**
+     * This method returns whether the user is authenticated and has obtained a token.
+     * @return Returns `true` if the user is authenticated, `false` otherwise
+     */
+    fun isAuthenticated(): Boolean
+
     /**
      * This is a suspend function because the operation can take time.
      * You DO NOT need to set any dispatcher to call this suspend function
