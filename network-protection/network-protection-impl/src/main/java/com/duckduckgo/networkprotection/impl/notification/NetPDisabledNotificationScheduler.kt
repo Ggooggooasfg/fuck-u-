@@ -47,7 +47,7 @@ class NetPDisabledNotificationScheduler @Inject constructor(
         when (vpnStopReason) {
             VpnStopReason.RESTART -> {} // no-op
             VpnStopReason.SELF_STOP -> onVPNManuallyStopped()
-            VpnStopReason.REVOKED -> {}
+            VpnStopReason.REVOKED -> onVPNRevoked()
             else -> {}
         }
     }
@@ -66,7 +66,6 @@ class NetPDisabledNotificationScheduler @Inject constructor(
     }
 
     override fun onVpnReconfigured(coroutineScope: CoroutineScope) {
-        super.onVpnReconfigured(coroutineScope)
         runBlocking {
             val reconfiguredNetPState = networkProtectionState.isEnabled()
             if (isNetPEnabled.getAndSet(reconfiguredNetPState) != reconfiguredNetPState) {
@@ -75,6 +74,12 @@ class NetPDisabledNotificationScheduler @Inject constructor(
                     // TODO: Show NetP disabled notifications
                 }
             }
+        }
+    }
+    private fun onVPNRevoked() {
+        if (shouldShowImmediateNotification()) {
+            logcat { "VPN has been revoked, showing revoked notification for NetP" }
+            isNetPEnabled.set(false)
         }
     }
 }
