@@ -18,7 +18,6 @@ package com.duckduckgo.networkprotection.impl.di
 
 import android.content.Context
 import androidx.room.Room
-import com.duckduckgo.di.scopes.ActivityScope
 import com.duckduckgo.di.scopes.AppScope
 import com.duckduckgo.mobile.android.vpn.prefs.VpnSharedPreferencesProvider
 import com.duckduckgo.mobile.android.vpn.ui.AppBreakageCategory
@@ -71,7 +70,7 @@ class DataModule {
 }
 
 @Module
-@ContributesTo(ActivityScope::class)
+@ContributesTo(AppScope::class)
 object NetPBreakageCategoriesModule {
     @Provides
     @NetpBreakageCategories

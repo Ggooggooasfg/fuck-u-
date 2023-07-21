@@ -156,4 +156,10 @@
     <string name="netpFaqAnswerEight">Yes, both Network Protection and App Tracking Protection can be on at the same time. No other VPNs are compatible with DuckDuckGo App Tracking Protection.</string>
     <string name="netpFaqQuestionNine">Is Network Protection free to use?</string>
     <string name="netpFaqAnswerNine">Network Protection is free to use while in beta. Eventually it will be offered as a paid service.</string>
+
+    <!-- Notifications -->
+    <string name="netpNotificationCTAEnableNetp">Enable Network Protection</string>
+    <string name="netpNotificationCTAReportIssue">Having problems with an app?</string>
+    <string name="netpNotificationDisabled">Network Protection Protection disabled. Tap to re-enable.</string>
+    <string name="netpNotificationDisabledByVpn">A VPN app on your device disabled Network Protection. Tap to re-enable.</string>
 </resources>
