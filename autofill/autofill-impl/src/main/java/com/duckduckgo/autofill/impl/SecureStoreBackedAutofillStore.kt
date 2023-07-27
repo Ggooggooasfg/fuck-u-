@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 DuckDuckGo
+ * Copyright (c) 2023 DuckDuckGo
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,18 +14,16 @@
  * limitations under the License.
  */
 
-package com.duckduckgo.autofill.store
+package com.duckduckgo.autofill.impl
 
 import com.duckduckgo.app.global.DefaultDispatcherProvider
 import com.duckduckgo.app.global.DispatcherProvider
-import com.duckduckgo.autofill.api.CredentialUpdateExistingCredentialsDialog.CredentialUpdateType
-import com.duckduckgo.autofill.api.CredentialUpdateExistingCredentialsDialog.CredentialUpdateType.Password
-import com.duckduckgo.autofill.api.CredentialUpdateExistingCredentialsDialog.CredentialUpdateType.Username
+import com.duckduckgo.autofill.api.CredentialUpdateExistingCredentialsDialog
 import com.duckduckgo.autofill.api.domain.app.LoginCredentials
 import com.duckduckgo.autofill.api.store.AutofillStore
-import com.duckduckgo.autofill.api.store.AutofillStore.ContainsCredentialsResult
-import com.duckduckgo.autofill.api.store.AutofillStore.ContainsCredentialsResult.NoMatch
 import com.duckduckgo.autofill.api.urlmatcher.AutofillUrlMatcher
+import com.duckduckgo.autofill.store.AutofillPrefsStore
+import com.duckduckgo.autofill.store.LastUpdatedTimeProvider
 import com.duckduckgo.securestorage.api.SecureStorage
 import com.duckduckgo.securestorage.api.WebsiteLoginDetails
 import com.duckduckgo.securestorage.api.WebsiteLoginDetailsWithCredentials
@@ -125,13 +123,13 @@ class SecureStoreBackedAutofillStore(
     override suspend fun updateCredentials(
         rawUrl: String,
         credentials: LoginCredentials,
-        updateType: CredentialUpdateType,
+        updateType: CredentialUpdateExistingCredentialsDialog.CredentialUpdateType,
     ): LoginCredentials? {
         val url = autofillUrlMatcher.cleanRawUrl(rawUrl)
 
         val filter = when (updateType) {
-            Username -> filterMatchingPassword(credentials)
-            Password -> filterMatchingUsername(credentials)
+            CredentialUpdateExistingCredentialsDialog.CredentialUpdateType.Username -> filterMatchingPassword(credentials)
+            CredentialUpdateExistingCredentialsDialog.CredentialUpdateType.Password -> filterMatchingUsername(credentials)
             else -> return null
         }
 
@@ -193,9 +191,9 @@ class SecureStoreBackedAutofillStore(
         rawUrl: String,
         username: String?,
         password: String?,
-    ): ContainsCredentialsResult {
+    ): AutofillStore.ContainsCredentialsResult {
         val url = autofillUrlMatcher.cleanRawUrl(rawUrl)
-        val credentials = secureStorage.websiteLoginDetailsWithCredentialsForDomain(url).firstOrNull() ?: return NoMatch
+        val credentials = secureStorage.websiteLoginDetailsWithCredentialsForDomain(url).firstOrNull() ?: return AutofillStore.ContainsCredentialsResult.NoMatch
 
         var exactMatchFound = false
         var usernameMatchFound = false
@@ -216,15 +214,15 @@ class SecureStoreBackedAutofillStore(
         }
 
         val matchType = if (exactMatchFound) {
-            ContainsCredentialsResult.ExactMatch
+            AutofillStore.ContainsCredentialsResult.ExactMatch
         } else if (usernameMatchFound) {
-            ContainsCredentialsResult.UsernameMatch
+            AutofillStore.ContainsCredentialsResult.UsernameMatch
         } else if (missingUsername) {
-            ContainsCredentialsResult.UsernameMissing
+            AutofillStore.ContainsCredentialsResult.UsernameMissing
         } else if (urlMatch) {
-            ContainsCredentialsResult.UrlOnlyMatch
+            AutofillStore.ContainsCredentialsResult.UrlOnlyMatch
         } else {
-            NoMatch
+            AutofillStore.ContainsCredentialsResult.NoMatch
         }
 
         Timber.v("Determined match type is %s", matchType.javaClass.simpleName)

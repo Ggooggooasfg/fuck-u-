@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 DuckDuckGo
+ * Copyright (c) 2023 DuckDuckGo
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,21 +14,18 @@
  * limitations under the License.
  */
 
-package com.duckduckgo.autofill.store
+package com.duckduckgo.autofill.impl
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.duckduckgo.app.CoroutineTestRule
-import com.duckduckgo.autofill.api.CredentialUpdateExistingCredentialsDialog.CredentialUpdateType
+import com.duckduckgo.autofill.api.CredentialUpdateExistingCredentialsDialog
 import com.duckduckgo.autofill.api.TestUrlUnicodeNormalizer
 import com.duckduckgo.autofill.api.domain.app.LoginCredentials
-import com.duckduckgo.autofill.api.store.AutofillStore.ContainsCredentialsResult
-import com.duckduckgo.autofill.api.store.AutofillStore.ContainsCredentialsResult.ExactMatch
-import com.duckduckgo.autofill.api.store.AutofillStore.ContainsCredentialsResult.NoMatch
-import com.duckduckgo.autofill.api.store.AutofillStore.ContainsCredentialsResult.UrlOnlyMatch
-import com.duckduckgo.autofill.api.store.AutofillStore.ContainsCredentialsResult.UsernameMatch
-import com.duckduckgo.autofill.api.store.AutofillStore.ContainsCredentialsResult.UsernameMissing
+import com.duckduckgo.autofill.api.store.AutofillStore
 import com.duckduckgo.autofill.api.urlmatcher.AutofillUrlMatcher
-import com.duckduckgo.autofill.store.urlmatcher.AutofillDomainNameUrlMatcher
+import com.duckduckgo.autofill.impl.urlmatcher.AutofillDomainNameUrlMatcher
+import com.duckduckgo.autofill.store.AutofillPrefsStore
+import com.duckduckgo.autofill.store.LastUpdatedTimeProvider
 import com.duckduckgo.securestorage.api.SecureStorage
 import com.duckduckgo.securestorage.api.WebsiteLoginDetails
 import com.duckduckgo.securestorage.api.WebsiteLoginDetailsWithCredentials
@@ -37,11 +34,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.test.runTest
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertNull
-import org.junit.Assert.assertTrue
+import org.junit.Assert
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -78,7 +71,7 @@ class SecureStoreBackedAutofillStoreTest {
     fun whenAutofillUnavailableAndPrefsAreAllTrueThenReturnTrueForAutofillEnabled() {
         setupTestee(canAccessSecureStorage = false)
 
-        assertTrue(testee.autofillEnabled)
+        Assert.assertTrue(testee.autofillEnabled)
     }
 
     @Test
@@ -86,19 +79,19 @@ class SecureStoreBackedAutofillStoreTest {
         setupTesteeWithAutofillAvailable()
         whenever(autofillPrefsStore.isEnabled).thenReturn(false)
 
-        assertFalse(testee.autofillEnabled)
+        Assert.assertFalse(testee.autofillEnabled)
     }
 
     @Test
     fun whenSecureStorageAvailableThenReturnAutofillAvailable() = runTest {
         setupTesteeWithAutofillAvailable()
-        assertTrue(testee.autofillAvailable)
+        Assert.assertTrue(testee.autofillAvailable)
     }
 
     @Test
     fun whenSecureStorageNotAvailableThenReturnAutofillAvailableFalse() {
         setupTestee(canAccessSecureStorage = false)
-        assertFalse(testee.autofillAvailable)
+        Assert.assertFalse(testee.autofillAvailable)
     }
 
     @Test
@@ -107,7 +100,7 @@ class SecureStoreBackedAutofillStoreTest {
         val url = "example.com"
         storeCredentials(1, url, "username", "password")
 
-        assertTrue(testee.getCredentials(url).isEmpty())
+        Assert.assertTrue(testee.getCredentials(url).isEmpty())
     }
 
     @Test
@@ -170,13 +163,13 @@ class SecureStoreBackedAutofillStoreTest {
         setupTesteeWithAutofillAvailable()
         storeCredentials(1, "url.com", "username1", "password123")
 
-        assertEquals(0, testee.getCredentials("https://example.com").size)
+        Assert.assertEquals(0, testee.getCredentials("https://example.com").size)
     }
 
     @Test
     fun whenNoCredentialsSavedThenGetAllCredentialsReturnNothing() = runTest {
         setupTesteeWithAutofillAvailable()
-        assertEquals(0, testee.getAllCredentials().first().size)
+        Assert.assertEquals(0, testee.getAllCredentials().first().size)
     }
 
     @Test
@@ -201,7 +194,7 @@ class SecureStoreBackedAutofillStoreTest {
             id = 1,
         )
 
-        testee.updateCredentials(url, credentials, CredentialUpdateType.Password)
+        testee.updateCredentials(url, credentials, CredentialUpdateExistingCredentialsDialog.CredentialUpdateType.Password)
 
         testee.getCredentials(url).run {
             this.assertHasLoginCredentials(url, "username1", "newpassword", UPDATED_INITIAL_LAST_UPDATED)
@@ -266,7 +259,7 @@ class SecureStoreBackedAutofillStoreTest {
             id = 1,
         )
 
-        testee.updateCredentials(url, credentials, CredentialUpdateType.Username)
+        testee.updateCredentials(url, credentials, CredentialUpdateExistingCredentialsDialog.CredentialUpdateType.Username)
 
         testee.getCredentials(url).run {
             this.assertHasLoginCredentials(url, "username1", "password123", UPDATED_INITIAL_LAST_UPDATED)
@@ -284,7 +277,7 @@ class SecureStoreBackedAutofillStoreTest {
 
         val credentials = LoginCredentials(domain = newDomain, username = "username1", password = "password123", id = 1)
 
-        assertNull(testee.updateCredentials(newDomain, credentials, CredentialUpdateType.Username))
+        Assert.assertNull(testee.updateCredentials(newDomain, credentials, CredentialUpdateExistingCredentialsDialog.CredentialUpdateType.Username))
 
         testee.getCredentials(urlStored).run {
             this.assertHasLoginCredentials(urlStored, null, "password123")
@@ -300,9 +293,9 @@ class SecureStoreBackedAutofillStoreTest {
             username = "username1",
             password = "password",
         )
-        testee.saveCredentials(url, credentials)
 
-        assertEquals(credentials.copy(domain = "example.com", lastUpdatedMillis = UPDATED_INITIAL_LAST_UPDATED), testee.getCredentials(url)[0])
+        testee.saveCredentials(url, credentials)
+        Assert.assertEquals(credentials.copy(domain = "example.com", lastUpdatedMillis = UPDATED_INITIAL_LAST_UPDATED), testee.getCredentials(url)[0])
     }
 
     @Test
@@ -328,7 +321,7 @@ class SecureStoreBackedAutofillStoreTest {
         storeCredentials(1, url, "username1", "password123")
         storeCredentials(2, url, "username2", "password456")
 
-        assertEquals(
+        Assert.assertEquals(
             LoginCredentials(
                 id = 1,
                 domain = url,
@@ -344,7 +337,7 @@ class SecureStoreBackedAutofillStoreTest {
     @Test
     fun whenNoCredentialStoredTheReturnNullOnGetCredentialsWithId() = runTest {
         setupTesteeWithAutofillAvailable()
-        assertNull(testee.getCredentialsWithId(1))
+        Assert.assertNull(testee.getCredentialsWithId(1))
     }
 
     @Test
@@ -355,8 +348,8 @@ class SecureStoreBackedAutofillStoreTest {
         storeCredentials(1, savedUrl, "username1", "password123")
 
         val results = testee.getCredentials(visitedSite)
-        assertEquals(1, results.size)
-        assertEquals(1L, results[0].id)
+        Assert.assertEquals(1, results.size)
+        Assert.assertEquals(1L, results[0].id)
     }
 
     @Test
@@ -367,8 +360,8 @@ class SecureStoreBackedAutofillStoreTest {
         storeCredentials(1, savedUrl, "username1", "password123")
 
         val results = testee.getCredentials(visitedSite)
-        assertEquals(1, results.size)
-        assertEquals(1L, results[0].id)
+        Assert.assertEquals(1, results.size)
+        Assert.assertEquals(1L, results[0].id)
     }
 
     @Test
@@ -379,8 +372,8 @@ class SecureStoreBackedAutofillStoreTest {
         storeCredentials(1, savedUrl, "username1", "password123")
 
         val results = testee.getCredentials(visitedSite)
-        assertEquals(1, results.size)
-        assertEquals(1L, results[0].id)
+        Assert.assertEquals(1, results.size)
+        Assert.assertEquals(1L, results[0].id)
     }
 
     @Test
@@ -391,7 +384,7 @@ class SecureStoreBackedAutofillStoreTest {
         storeCredentials(1, savedUrl, "username1", "password123")
 
         val results = testee.getCredentials(visitedSite)
-        assertEquals(1, results.size)
+        Assert.assertEquals(1, results.size)
     }
 
     @Test
@@ -402,7 +395,7 @@ class SecureStoreBackedAutofillStoreTest {
         storeCredentials(1, savedUrl, "username1", "password123")
 
         val results = testee.getCredentials(visitedSite)
-        assertEquals(1, results.size)
+        Assert.assertEquals(1, results.size)
     }
 
     @Test
@@ -413,7 +406,7 @@ class SecureStoreBackedAutofillStoreTest {
         storeCredentials(1, savedUrl, "username1", "password123")
 
         val results = testee.getCredentials(visitedSite)
-        assertEquals(1, results.size)
+        Assert.assertEquals(1, results.size)
     }
 
     @Test
@@ -431,14 +424,14 @@ class SecureStoreBackedAutofillStoreTest {
         testee.reinsertCredentials(originalCredentials)
 
         val reinsertedCredentials = secureStore.getWebsiteLoginDetailsWithCredentials(123)
-        assertNotNull("Failed to find credentials", reinsertedCredentials)
-        assertEquals(originalCredentials.id, reinsertedCredentials!!.details.id)
-        assertEquals(originalCredentials.username, reinsertedCredentials.details.username)
-        assertEquals(originalCredentials.domain, reinsertedCredentials.details.domain)
-        assertEquals(originalCredentials.domainTitle, reinsertedCredentials.details.domainTitle)
-        assertEquals(originalCredentials.lastUpdatedMillis, reinsertedCredentials.details.lastUpdatedMillis)
-        assertEquals(originalCredentials.notes, reinsertedCredentials.notes)
-        assertEquals(originalCredentials.password, reinsertedCredentials.password)
+        Assert.assertNotNull("Failed to find credentials", reinsertedCredentials)
+        Assert.assertEquals(originalCredentials.id, reinsertedCredentials!!.details.id)
+        Assert.assertEquals(originalCredentials.username, reinsertedCredentials.details.username)
+        Assert.assertEquals(originalCredentials.domain, reinsertedCredentials.details.domain)
+        Assert.assertEquals(originalCredentials.domainTitle, reinsertedCredentials.details.domainTitle)
+        Assert.assertEquals(originalCredentials.lastUpdatedMillis, reinsertedCredentials.details.lastUpdatedMillis)
+        Assert.assertEquals(originalCredentials.notes, reinsertedCredentials.notes)
+        Assert.assertEquals(originalCredentials.password, reinsertedCredentials.password)
     }
 
     private fun List<LoginCredentials>.assertHasNoLoginCredentials(
@@ -450,7 +443,7 @@ class SecureStoreBackedAutofillStoreTest {
         val result = this.filter {
             it.domain == url && it.username == username && it.password == password && it.lastUpdatedMillis == lastUpdatedTimeMillis
         }
-        assertEquals(0, result.size)
+        Assert.assertEquals(0, result.size)
     }
 
     private fun List<LoginCredentials>.assertHasLoginCredentials(
@@ -462,7 +455,7 @@ class SecureStoreBackedAutofillStoreTest {
         val result = this.filter {
             it.domain == url && it.username == username && it.password == password && it.lastUpdatedMillis == lastUpdatedTimeMillis
         }
-        assertEquals(1, result.size)
+        Assert.assertEquals(1, result.size)
     }
 
     private fun setupTesteeWithAutofillAvailable() {
@@ -482,24 +475,39 @@ class SecureStoreBackedAutofillStoreTest {
         )
     }
 
-    private fun assertNotMatch(result: ContainsCredentialsResult) {
-        assertTrue(String.format("Expected NoMatch but was %s", result.javaClass.simpleName), result is NoMatch)
+    private fun assertNotMatch(result: AutofillStore.ContainsCredentialsResult) {
+        Assert.assertTrue(
+            String.format("Expected NoMatch but was %s", result.javaClass.simpleName),
+            result is AutofillStore.ContainsCredentialsResult.NoMatch,
+        )
     }
 
-    private fun assertUrlOnlyMatch(result: ContainsCredentialsResult) {
-        assertTrue(String.format("Expected UrlOnlyMatch but was %s", result.javaClass.simpleName), result is UrlOnlyMatch)
+    private fun assertUrlOnlyMatch(result: AutofillStore.ContainsCredentialsResult) {
+        Assert.assertTrue(
+            String.format("Expected UrlOnlyMatch but was %s", result.javaClass.simpleName),
+            result is AutofillStore.ContainsCredentialsResult.UrlOnlyMatch,
+        )
     }
 
-    private fun assertUsernameMissing(result: ContainsCredentialsResult) {
-        assertTrue(String.format("Expected UsernameMissing but was %s", result.javaClass.simpleName), result is UsernameMissing)
+    private fun assertUsernameMissing(result: AutofillStore.ContainsCredentialsResult) {
+        Assert.assertTrue(
+            String.format("Expected UsernameMissing but was %s", result.javaClass.simpleName),
+            result is AutofillStore.ContainsCredentialsResult.UsernameMissing,
+        )
     }
 
-    private fun assertUsernameMatch(result: ContainsCredentialsResult) {
-        assertTrue(String.format("Expected UsernameMatch but was %s", result.javaClass.simpleName), result is UsernameMatch)
+    private fun assertUsernameMatch(result: AutofillStore.ContainsCredentialsResult) {
+        Assert.assertTrue(
+            String.format("Expected UsernameMatch but was %s", result.javaClass.simpleName),
+            result is AutofillStore.ContainsCredentialsResult.UsernameMatch,
+        )
     }
 
-    private fun assertExactMatch(result: ContainsCredentialsResult) {
-        assertTrue(String.format("Expected ExactMatch but was %s", result.javaClass.simpleName), result is ExactMatch)
+    private fun assertExactMatch(result: AutofillStore.ContainsCredentialsResult) {
+        Assert.assertTrue(
+            String.format("Expected ExactMatch but was %s", result.javaClass.simpleName),
+            result is AutofillStore.ContainsCredentialsResult.ExactMatch,
+        )
     }
 
     private suspend fun storeCredentials(

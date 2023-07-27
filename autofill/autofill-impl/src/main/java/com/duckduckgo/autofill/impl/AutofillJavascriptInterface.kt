@@ -146,7 +146,8 @@ class AutofillStoredBackJavascriptInterface @Inject constructor(
         request: AutofillDataRequest,
         triggerType: LoginTriggerType,
     ) {
-        val allCredentials = autofillStore.getCredentials(url)
+        val exactMatches = autofillStore.getCredentials(url)
+        val allCredentials = exactMatches
         val credentials = filterRequestedSubtypes(request, allCredentials)
 
         if (credentials.isEmpty()) {

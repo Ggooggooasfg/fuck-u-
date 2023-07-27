@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 DuckDuckGo
+ * Copyright (c) 2023 DuckDuckGo
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,14 +14,13 @@
  * limitations under the License.
  */
 
-package com.duckduckgo.autofill.store.urlmatcher
+package com.duckduckgo.autofill.impl.urlmatcher
 
 import androidx.core.net.toUri
 import com.duckduckgo.app.global.extractDomain
 import com.duckduckgo.app.global.normalizeScheme
 import com.duckduckgo.autofill.api.encoding.UrlUnicodeNormalizer
 import com.duckduckgo.autofill.api.urlmatcher.AutofillUrlMatcher
-import com.duckduckgo.autofill.api.urlmatcher.AutofillUrlMatcher.ExtractedUrlParts
 import javax.inject.Inject
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import timber.log.Timber
@@ -30,7 +29,7 @@ class AutofillDomainNameUrlMatcher @Inject constructor(
     private val unicodeNormalizer: UrlUnicodeNormalizer,
 ) : AutofillUrlMatcher {
 
-    override fun extractUrlPartsForAutofill(originalUrl: String?): ExtractedUrlParts {
+    override fun extractUrlPartsForAutofill(originalUrl: String?): AutofillUrlMatcher.ExtractedUrlParts {
         if (originalUrl == null) return unextractable()
 
         val normalizedUrl = unicodeNormalizer.normalizeAscii(originalUrl)?.normalizeScheme() ?: return unextractable()
@@ -41,7 +40,7 @@ class AutofillDomainNameUrlMatcher @Inject constructor(
             val domain = originalUrl.extractDomain()
             val port = httpUrl.port
             val subdomain = determineSubdomain(domain, eTldPlus1)
-            ExtractedUrlParts(
+            AutofillUrlMatcher.ExtractedUrlParts(
                 eTldPlus1 = eTldPlus1,
                 userFacingETldPlus1 = unicodeNormalizer.normalizeUnicode(eTldPlus1),
                 subdomain = subdomain,
@@ -66,8 +65,8 @@ class AutofillDomainNameUrlMatcher @Inject constructor(
     }
 
     override fun matchingForAutofill(
-        visitedSite: ExtractedUrlParts,
-        savedSite: ExtractedUrlParts,
+        visitedSite: AutofillUrlMatcher.ExtractedUrlParts,
+        savedSite: AutofillUrlMatcher.ExtractedUrlParts,
     ): Boolean {
         // ports must match (both being null is considered a match)
         if (visitedSite.port != savedSite.port) return false
@@ -84,13 +83,13 @@ class AutofillDomainNameUrlMatcher @Inject constructor(
     }
 
     private fun identicalEffectiveTldPlusOne(
-        visitedSite: ExtractedUrlParts,
-        savedSite: ExtractedUrlParts,
+        visitedSite: AutofillUrlMatcher.ExtractedUrlParts,
+        savedSite: AutofillUrlMatcher.ExtractedUrlParts,
     ): Boolean {
         return visitedSite.eTldPlus1.equals(savedSite.eTldPlus1, ignoreCase = true)
     }
 
-    private fun unextractable(): ExtractedUrlParts {
-        return ExtractedUrlParts(null, null, null)
+    private fun unextractable(): AutofillUrlMatcher.ExtractedUrlParts {
+        return AutofillUrlMatcher.ExtractedUrlParts(null, null, null)
     }
 }
